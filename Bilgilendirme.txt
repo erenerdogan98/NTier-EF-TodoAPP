@@ -1,0 +1,82 @@
+Bu projede , N katmanlý mimarý yapýyý kullanýyoruz , SQL baðlantýmýzý EntityFramework ile saðlýyoruz.
+Microsoft.EntityFrameworkCore , Microsoft.EntityFrameworkCoreDesign , Microsoft.EntityFrameworkCoreSqlServer ve Microsoft.EntityFrameworkCoreTools 
+bu paketleri , Manage Nuget Packages ile projemizin DLL katmanýna ekliyoruz (Database Logic Layer)
+Projemizde sunum katmaný , windows form ama baþka bir sunum katmanýnda da çok rahat kullanabiliriz , sunum katmaný için Microsoft.EntityFrameworkCore ve Microsoft.EntityFrameworkCoreDesign packages lerini ekliyoruz.
+           Entities
+Entity sýnýflarýmýzý tanýmladýk , Enjekte etmek için virtual özelliði ile propory eklendi , Package Manager Console ile , add-miration mig þeklinde , tablolarýmýzý oluþturuyoruz ve update-database diye güncelliyoruz (Database baðlantýsý yapýlýnca) 
+
+           DLL katmaný 
+           Abstract 
+Bu katmanda , database iþlemlerini yapýyoruz , Abstract klasörümüzde , interface sýnýflarýmýz mevcut.
+Bir tane T tipinde bir interface sýnýfý oluþturup , insert-delete-update gibi metotlarýmýzý burada tanýmlýyoruz
+Ve entity lerimizde tanýmladýðýmýz sýnýflar için , ayrý interface ler oluþturup , sadece inherit(kalýtým) yapýyoruz , ayrý ayrý metotlar yazmýyoruz.
+           Database
+Burada Context adýnda bir sýnýf oluþturup , SQL baðlantýmýzý gerçekleþtiriyoruz. DbContext ile kalýtýyoruz (EF (Entity Framework) Core'un temel bileþenlerindendir ve veritabanýyla çalýþmamýzý saðlar.)
+DbSet ; DbSet<TEntity> türünde bir özellik, veritabanýnda bir tabloya veya görüntüye karþýlýk gelir. Burada TEntity, her bir tablo satýrýný temsil eden bir sýnýf türüdür.
+           Repository
+Genel (depo sýnýfý), birçok farklý türdeki varlýk (entity) için ayný CRUD (Oluþturma, Okuma, Güncelleme, Silme) iþlemlerini tekrar tekrar yazmamamýzý saðlýyor. 
+GenericRepository<T> sýnýfý, temelde bir varlýk türü T için CRUD iþlevleri sunar , ve bu sýnýfý , IGenericDAL<T> ile kalýtýyoruz (Genel metotlarýmýzýn olduðu interface sýnýfýmýz)
+using var c = new Context();: Bu satýr, Entity Framework Core'un yeni özelliði olan using deyimini kullanarak bir Context örneði oluþturur. Bu yapý, iþlem tamamlandýðýnda otomatik olarak Dispose metodunu çaðýrýr, bu da veritabaný baðlantýsýný otomatik olarak kapatýr. Bu, kaynaklarý etkili bir þekilde yönetmemize yardýmcý olur.
+c.Set<T>(): Bu, DbContext sýnýfýnýn Set metodunu çaðýrarak belirli bir T türü için DbSet'i alýr. Bu, genel depo sýnýfýnýn en güçlü yanýdýr, çünkü hangi türde bir varlýkla çalýþtýðýnýza baðlý olarak dinamik olarak DbSet'i elde edebiliriz.
+Bu tür bir yapý, kod tekrarýný önler ve çok daha sade bir yapý saðlar.
+           EntityFramework
+EFContextDAL sýnýfý ,  .NET Core'un baðýmlýlýk enjeksiyon (Dependency Injection - DI) özelliklerini kullanarak bir servis yapýlandýrma sýnýfýdýr.
+DI, SOLID ilke setinin D harfinde belirtilen Baðýmlýlýðýn Tersine Çevrilmesi (Dependency Inversion) ilkesini uygulamamýza yardýmcý olur.
+Microsoft.Extensions.DependencyInjection: Bu namespace, .NET Core'un baðýmlýlýk enjeksiyon servislerini içerir.
+services.AddScoped<IUserDAL, EFUserRepository>();: Bu satýr, IUserDAL için baðýmlýlýðý EFUserRepository ile enjekte eder. Yani herhangi bir yerde IUserDAL türünde bir nesne istendiðinde, EFUserRepository sýnýfýnýn bir örneði oluþturulur. 
+services.AddScoped<IUserDAL, EFUserRepository>();: Bu satýr, IUserDAL için baðýmlýlýðý EFUserRepository ile enjekte eder. 
+EFTodoRepository sýnýfý için ; EFTodoRepository sýnýfýnýn GenericRepository<TodoLibrary> sýnýfýnda tanýmlanan tüm metotlara eriþebileceði anlamýna gelir. Ayný zamanda ITodoLibraryDAL arayüzünü de uygular, bu da bu arayüzde tanýmlanan metodlarýn bu sýnýfta da tanýmlanmasý gerektiði anlamýna gelir.
+           Migrations
+Migration larý , Entities sýnýflarýnda bir deðiþiklik yapýnca , Package Manager Console ile , add-migration mign þeklinde ekliyoruz ve update-database yapýyoruz.
+
+               BLL Katmaný (Business Logic Layer) (Ýþ katmaný)
+                   Abstract Klasörü
+Ýçerisinde metotlarýmýzýn tanýmlý olduðu (Her bir entity sýnýfý için) , interface sýnýflarýmýz mevcuttur.
+                   Helper 
+Burada Email gönderim iþlemi için gerekli kodlar girilmiþtir. 
+                   Services
+EFUserRepository eFUserRepository;: Bu satýrda, EFUserRepository sýnýfýndan bir örnek (nesne) tanýmlýyoruz. Bu, UserService sýnýfýnýn, kullanýcýlarý veritabanýnda saklamak için EFUserRepository sýnýfýndaki metodlarý kullanacaðý anlamýna gelir.
+Özetle, UserService sýnýfý, uygulama için bir kullanýcý servisi oluþturur ve bu servis, veritabaný iþlemlerini gerçekleþtirmek için EFUserRepository sýnýfýný kullanýr. Bu yaklaþým, iþ mantýðýný ve veritabaný eriþimini birbirinden ayýrarak kodun daha temiz, sürdürülebilir ve geniþletilebilir olmasýný saðlar.
+                   ValidationRules
+Burada FluentValidation  paketini Manage NuGet Packates den ekliyoruz (BLL katmanýna) , ve AbstractValidator<EntityName> , bu þekilde kalýtýyoruz.
+Class seviyesinde , Context (database için) ve ilgili kuralýn yazýlacaðý servis sýnýfýmýzý (abstract) private readonly ... þeklinde tanýmlýyoruz ve yapýcý metot (constructor) içerisinde , örnekliyoruz.
+RuleFor<> ile kurallarýmýzý yazýp , sunum katmanýnda rahatlýkla kullanabiliyoruz. 
+
+                   EFContextBLL
+public static class EfContextBLL: Bu sýnýf static tanýmlanmýþ bir yardýmcý sýnýftýr. Amacý, uygulamada kullanýlacak servislerin baðýmlýlýklarýný tanýmlamak ve enjekte etmektir.
+AddScopeBLL(this IServiceCollection services): Bu bir geniþleme metodu (extension method) olarak tanýmlanmýþtýr. Geniþleme metodlarý, mevcut bir tipe yeni bir metot eklemek için kullanýlýr. Bu durumda, IServiceCollection türüne yeni bir metot ekleniyor.
+Baðýmlýlýklarýn tanýmlanmasý : 
+services.AddScopeDAL();: Bu satýrda, baþka bir geniþleme metodu çaðrýlýyor. Bu muhtemelen AddScopeDAL metodunu çaðýrarak veri eriþim katmanýndaki baðýmlýlýklarý tanýmlar.
+services.AddScoped<IUserService, UserService>();: Bu satýr, IUserService arabirimini UserService sýnýfýyla iliþkilendirir. Uygulamanýn herhangi bir yerinde IUserService talep edildiðinde, UserService sýnýfýndan bir örnek alýnýr.
+services.AddScoped<UserRegistrationValidation>();: Bu ve diðer benzer satýrlar, belirli bir validation sýnýfýnýn her talep edildiðinde nasýl örneklenmesi gerektiðini tanýmlar.
+services.AddDbContext<Context>();: Bu, Entity Framework Core'un DbContext sýnýfýný kullanarak bir veritabaný baðlantýsý nasýl oluþturulacaðýný tanýmlar.
+Scoped Özelliði:
+AddScoped metodu, bir HTTP isteði baðlamýnda (genellikle bir web uygulamasý içerisinde) her talep için bir kez oluþturulan ve ayný baðlam içerisindeki tüm sýnýflar arasýnda paylaþýlan bir nesne örneðini ifade eder. 
+Bu yapý, kodunuzu modüler ve test edilebilir kýlar. Her bir sýnýfýn veya servisin gerçekte ne yaptýðýna dair detaylarý soyutlayarak, yüksek seviyeli bir yapý oluþturmuþ oluruz.
+
+                   UI katmaný
+Windows Form ile sunum katmanýný oluþturdum. Program.cs ile baþlamak istiyorum :Main Metodu
+
+ApplicationConfiguration.Initialize();: Uygulamanýn bazý özel yapýlandýrmalarýný baþlatýr. Bu, DPI ayarlarý veya varsayýlan yazý tipi gibi özelleþtirmeler için kullanýlýr.
+
+var services = new ServiceCollection();: Yeni bir ServiceCollection örneði oluþturulur. Bu, uygulama içerisindeki sýnýf ve servislerin baðýmlýlýklarýný tanýmlamak için kullanýlýr.
+
+services.AddScopeBLL();: Önceden tanýmlanan AddScopeBLL geniþleme metodunu çaðýrýr. Bu metod, iþ mantýðý (BLL) ve veritabaný eriþim katmaný (DAL) için gerekli olan sýnýf ve servislerin baðýmlýlýklarýný tanýmlar.
+
+var serviceProvider = services.BuildServiceProvider();: Oluþturulan servisleri ve sýnýflarý kullanýlabilir hale getirmek için bir servis saðlayýcý oluþturulur.
+
+var MainForm = new Login(...);: Yeni bir Login formu oluþturulur. Bu formun yapýcýsý (constructor), çeþitli servisler ve validation kurallarý ile ilgili sýnýflarýn örneklerini gerektirir. Bu sýnýflarýn örnekleri, servis saðlayýcý aracýlýðýyla alýnýr.
+
+Application.Run(MainForm);: Uygulamanýn MainForm olarak adlandýrýlan formda çalýþmasýný baþlatýr.
+
+    Formlar arasýnda geçiþleri rahatlýkla görebilirsiniz , kullandýðýmýz servis(iþ) katmanlarýmýzý class seviyesinde tanýmlayýp , yapýcý metotun içerisinde örnekliyoruz
+    Formlar arasýnda geçiþ olduðu için , her form birbirini kapsýyor , bu yapý, baðýmlýlýklarýn sýnýfa dýþarýdan enjekte edilmesi (Dependency Injection) ile çalýþýr. Bu yaklaþým, sýnýflarýn birbirlerine daha az baðýmlý olmasýný saðlar ve test edilebilirlik, modülerlik ve esneklik gibi avantajlar sunar.
+
+
+    Projemizde , kayýt olan kullanýcýya mail ile bilgilendirme gönderilir , admin için ayrý bir panel vardýr ve admin yetkileri ayrýdýr. Bir kullanýcý admin olmak isterse,
+    sistemde bulunan adminin bekleme ekranýna gelir ve admin bunu onaylayýp / reddeder. 
+    Her kullanýcý , sadece kendi iþlemlerini görebilir ama admin tüm iþlemleri görebilir , düzeltebilir veya silebilir.
+
+        Özetle , projemizde , n katmanlý mimari yapýya ve solid prensiplerine uygun bir örnek olmuþtur. Farklý bir sunum katmanýnda da bu baðýmlýlýklarý kolaylýkça tanýmlayýp , yapabiliriz.
+    Uygulama aslýnda basit bir Todo uygulamasý ama burada kullandýðýmýz iþlemlerle , çok daha kapsamlý uygulamalar yapýlabilir. 
+    Þifre güvenirliði için SHA þifreleme yöntemi ile daha güvenli bir sistem yapýlabilir.Özellikle , Asp.NetCore ile sunum katmaný yaparsak , JSON Token ile güzel bir güvenlik iþlemi yapýlýr.

@@ -1,0 +1,82 @@
+In this project, we use the N-layer architectural structure and provide our SQL connection with EntityFramework.
+Microsoft.EntityFrameworkCore, Microsoft.EntityFrameworkCoreDesign, Microsoft.EntityFrameworkCoreSqlServer and Microsoft.EntityFrameworkCoreTools
+We add these packages to the DLL layer of our project with Manage Nuget Packages (Database Logic Layer)
+In our project, the presentation layer is Windows Form, but we can easily use it in another presentation layer. We add Microsoft.EntityFrameworkCore and Microsoft.EntityFrameworkCoreDesign packages for the presentation layer.
+            Entities
+We defined our Entity classes, added the propory with the virtual property to inject, created our tables with the Package Manager Console, in the form of add-miration mig, and updated them as update-database (when the database connection is made).
+
+            DLL layer
+            Abstract
+In this layer, we perform database operations, and we have interface classes in our Abstract folder.
+We create an interface class of type T and define our methods such as insert-delete-update here.
+And for the classes we define in our entities, we create separate interfaces and only inherit, we do not write separate methods.
+            Database
+Here we create a class called Context and make our SQL connection. We inherit with DbContext (It is a core component of EF (Entity Framework) Core and allows us to work with the database.)
+DbSet ; A property of type DbSet<TEntity> corresponds to a table or view in the database. Here TEntity is a class type that represents each table row.
+            repository
+Generic (repository class) ensures that we do not write the same CRUD (Create, Read, Update, Delete) operations over and over again for many different types of entities.
+The GenericRepository<T> class basically provides CRUD functions for an entity type T, and we inherit this class with IGenericDAL<T> (our interface class with our public methods).
+using var c = new Context();: This line creates a Context instance using the using statement, which is a new feature of Entity Framework Core. This structure automatically calls the Dispose method when the transaction is completed, which automatically closes the database connection. This helps us manage resources effectively.
+c.Set<T>(): This gets the DbSet for a given type T by calling the Set method of the DbContext class. This is the great strength of the generic repository class because we can dynamically obtain the DbSet depending on what type of entity you are working with.
+This type of structure prevents code repetition and provides a much simpler structure.
+            EntityFramework
+The EFContextDAL class is a service configuration class using .NET Core's dependency injection (DI) features.
+DI helps us implement the Dependency Inversion principle specified in letter D of the SOLID policy set.
+Microsoft.Extensions.DependencyInjection: This namespace contains .NET Core's dependency injection services.
+services.AddScoped<IUserDAL, EFUserRepository>();: This line injects the dependency for IUserDAL with EFUserRepository. That is, whenever an object of type IUserDAL is requested anywhere, an instance of the EFUserRepository class is created.
+services.AddScoped<IUserDAL, EFUserRepository>();: This line injects the dependency for IUserDAL with EFUserRepository.
+For EFTodoRepository class; It means that the EFTodoRepository class can access all methods defined in the GenericRepository<TodoLibrary> class. It also implements the ITodoLibraryDAL interface, which means that methods defined in this interface must also be defined in this class.
+            Migrations
+When we make a change in the Entities classes, we add migrations via the Package Manager Console as add-migration mig and update-database.
+
+                BLL Layer (Business Logic Layer)
+                    Abstract Folder
+We have interface classes in which our methods are defined (for each entity class).
+                    helper
+The codes required for email sending have been entered here.
+Services
+EFUserRepository eFUserRepository;: In this line, we define an instance (object) of the EFUserRepository class. This means that the UserService class will use the methods in the EFUserRepository class to store users in the database.
+In summary, the UserService class creates a user service for the application, and this service uses the EFUserRepository class to perform database operations. This approach separates business logic and database access, making the code cleaner, maintainable, and extensible.
+                    ValidationRules
+Here we add the FluentValidation package from Manage NuGet Packages (to the BLL layer), and inherit it as AbstractValidator<EntityName>.
+At the class level, we define our service class (abstract), in which the Context (for the database) and the relevant rule will be written, as private readonly ... and instantiate it in the constructor method.
+We can write our rules with RuleFor<> and use them easily in the presentation layer.
+
+                    EFContextBLL
+public static class EfContextBLL: This class is a static defined helper class. Its purpose is to define and inject dependencies of services to be used in the application.
+AddScopeBLL(this IServiceCollection services): This is defined as an extension method. Extension methods are used to add a new method to an existing type. In this case, a new method is added to the IServiceCollection type.
+Defining dependencies:
+services.AddScopeDAL();: In this line, another expansion method is called. This identifies dependencies at the data access layer, possibly by calling the AddScopeDAL method.
+services.AddScoped<IUserService, UserService>();: This line associates the IUserService interface with the UserService class. When IUserService is requested anywhere in the application, an instance of the UserService class is retrieved.
+services.AddScoped<UserRegistrationValidation>();: This and other similar lines define how a particular validation class should be instantiated each time it is requested.
+services.AddDbContext<Context>();: This defines how to create a database connection using Entity Framework Core's DbContext class.
+Scoped Feature:
+The AddScoped method refers to an object instance that is created once per request in the context of an HTTP request (usually within a web application) and shared among all classes within the same context.
+This structure makes your code modular and testable. By abstracting the details of what each class or service actually does, we create a high-level structure.
+
+                    UI layer
+I created the presentation layer with Windows Form. I want to start with Program.cs:Main Method
+
+ApplicationConfiguration.Initialize();: Initializes some custom configuration of the application. This is used for customizations like DPI settings or default font.
+
+var services = new ServiceCollection();: A new ServiceCollection instance is created. This is used to define dependencies of classes and services within the application.
+
+services.AddScopeBLL();: Calls the predefined AddScopeBLL expansion method. This method defines the dependencies of classes and services required for the business logic (BLL) and database access layer (DAL).
+
+var serviceProvider = services.BuildServiceProvider();: A service provider is created to make the created services and classes available.
+
+var MainForm = new Login(...);: A new Login form is created. The constructor of this form requires instances of the relevant classes with various services and validation rules. Instances of these classes are obtained through the service provider.
+
+Application.Run(MainForm);: Starts the application to run in the form called MainForm.
+
+     You can easily see the transitions between forms. We define the service (business) layers we use at the class level and instantiate them in the constructor method.
+     Since there is a transition between forms, each form covers each other, this structure works by injecting dependencies into the class from the outside (Dependency Injection). This approach makes classes less dependent on each other and offers advantages such as testability, modularity, and flexibility.
+
+
+     In our project, the registered user is informed by e-mail, there is a separate panel for the admin and the admin rights are separate. If a user wants to be an admin,
+     It comes to the waiting screen of the admin in the system and the admin approves / rejects it.
+     Each user can only see their own transactions, but the admin can see, correct or delete all transactions.
+
+         In summary, our project is an example of n-layered architectural structure and solid principles. We can easily define and make these dependencies in a different presentation layer.
+         The application is actually a simple Todo application, but much more comprehensive applications can be made with the processes we use here.
+     A more secure system can be made with the SHA encryption method for password reliability. Especially if we create a presentation layer with Asp.NetCore, a good security process is achieved with JSON Token.
